@@ -27,4 +27,4 @@ migration-down:
 	@migrate -database $(DB_URL) -path ./internal/db/migrations down 1
 
 go-run:
-	@go run main.go
+	@go run cmd/main.go
