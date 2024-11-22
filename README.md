@@ -44,8 +44,6 @@ E-commerce/
 ```
 
 
-This is a well-structured Go project following clean architecture principles with clear separation of concerns:
-
 1. `cmd/` - Contains the main application entry point
 2. `internal/` - Private application code
     - `db/` - Database migrations and configuration
