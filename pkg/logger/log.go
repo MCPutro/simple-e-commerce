@@ -63,7 +63,7 @@ func ContextLogger(ctx context.Context) *logrus.Entry {
 
 	if ctxRqId, ok := ctx.Value(constant.HeaderXRequestID).(string); ok {
 		fields = logrus.Fields{
-			"requestId": ctxRqId,
+			constant.HeaderXRequestID: ctxRqId,
 		}
 	}
 

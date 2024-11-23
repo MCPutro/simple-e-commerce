@@ -24,11 +24,12 @@ func NewHandler(productUseCase usecase.ProductUseCase, cartUseCase usecase.CartU
 	}
 }
 
-func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.ContextLogger(ctx)
 
-	productID := r.URL.Query().Get("id")
+	// productID := r.URL.Query().Get("id")
+	productID := r.PathValue("id")
 	if productID == "" {
 		http.Error(w, "product ID is required", http.StatusBadRequest)
 		return
@@ -41,7 +42,7 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := h.productUseCase.GetProduct(ctx, uint(id))
+	product, err := h.productUseCase.GetProductByID(ctx, uint(id))
 	if err != nil {
 		log.WithError(err).Error("failed to get product")
 		http.Error(w, "failed to get product", http.StatusInternalServerError)
@@ -49,6 +50,20 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(product)
+}
+
+func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log := logger.ContextLogger(ctx)
+
+	products, err := h.productUseCase.GetProducts(ctx)
+	if err != nil {
+		log.WithError(err).Error("failed to get product")
+		http.Error(w, "failed to get product", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(products)
 }
 
 func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
@@ -114,14 +129,8 @@ func (h *Handler) GetCart(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// Product routes
-	mux.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.GetProduct(w, r)
-		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	mux.HandleFunc("GET /products/{id}", h.GetProductById)
+	mux.HandleFunc("GET /products", h.GetProducts)
 
 	// Cart routes
 	mux.HandleFunc("/cart", func(w http.ResponseWriter, r *http.Request) {

@@ -12,15 +12,15 @@ import (
 )
 
 type ProductRepository interface {
-	GetAllProducts(ctx context.Context, tx *sql.Tx) ([]entity.Product, error)
-	GetProductByID(ctx context.Context, tx *sql.Tx, id uint) (*entity.Product, error)
+	ReadAll(ctx context.Context, tx *sql.Tx) ([]*entity.Product, error)
+	ReadByID(ctx context.Context, tx *sql.Tx, id uint) (*entity.Product, error)
 	UpdateStock(ctx context.Context, tx *sql.Tx, productID uint, quantity int) error
-	CreateProduct(ctx context.Context, tx *sql.Tx, product *entity.Product) error
+	Write(ctx context.Context, tx *sql.Tx, product *entity.Product) error
 }
 
 type productRepository struct{}
 
-func (p *productRepository) GetAllProducts(ctx context.Context, tx *sql.Tx) ([]entity.Product, error) {
+func (p *productRepository) ReadAll(ctx context.Context, tx *sql.Tx) ([]*entity.Product, error) {
 	query := "SELECT id, name, price, stock, creation_time, update_time, delete_time FROM e_commerce.products where delete_time is null FOR UPDATE;"
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
@@ -28,7 +28,7 @@ func (p *productRepository) GetAllProducts(ctx context.Context, tx *sql.Tx) ([]e
 	}
 	defer rows.Close()
 
-	var products []entity.Product
+	var products []*entity.Product
 	for rows.Next() {
 		var product entity.Product
 		var createdAt, updateTime, deleteTime sql.NullTime
@@ -45,13 +45,13 @@ func (p *productRepository) GetAllProducts(ctx context.Context, tx *sql.Tx) ([]e
 			product.UpdateTime = updateTime.Time
 		}
 
-		products = append(products, product)
+		products = append(products, &product)
 	}
 
 	return products, nil
 }
 
-func (p *productRepository) GetProductByID(ctx context.Context, tx *sql.Tx, id uint) (*entity.Product, error) {
+func (p *productRepository) ReadByID(ctx context.Context, tx *sql.Tx, id uint) (*entity.Product, error) {
 	query := "SELECT id, name, price, stock, creation_time, update_time, delete_time FROM e_commerce.products where delete_time is null and id = ? LIMIT 1 FOR UPDATE;"
 	rows, err := tx.QueryContext(ctx, query, id)
 	if err != nil {
@@ -100,7 +100,7 @@ func (p *productRepository) UpdateStock(ctx context.Context, tx *sql.Tx, product
 	}
 }
 
-func (p *productRepository) CreateProduct(ctx context.Context, tx *sql.Tx, product *entity.Product) error {
+func (p *productRepository) Write(ctx context.Context, tx *sql.Tx, product *entity.Product) error {
 	now := time.Now().Format(constant.TimeFormat)
 
 	query := "INSERT INTO e_commerce.products (name,price,stock,creation_time,update_time) VALUES (?,?,?,?,?);"

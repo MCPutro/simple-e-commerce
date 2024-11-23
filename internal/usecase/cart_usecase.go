@@ -46,7 +46,7 @@ func (c *cartUsecase) AddToCart(ctx context.Context, userID uint, item *entity.C
 	}()
 
 	// Cek ketersediaan produk dan stok
-	product, err := c.productRepo.GetProductByID(ctx, tx, item.ProductID)
+	product, err := c.productRepo.ReadByID(ctx, tx, item.ProductID)
 	if err != nil {
 		return newError.ErrProductNotFound
 	}
@@ -60,7 +60,7 @@ func (c *cartUsecase) AddToCart(ctx context.Context, userID uint, item *entity.C
 	// }
 
 	// Tambahkan ke keranjang
-	err = c.cartRepo.AddToCart(ctx, tx, userID, item)
+	err = c.cartRepo.WriteCart(ctx, tx, userID, item)
 	if err != nil {
 		return fmt.Errorf("gagal menambahkan ke keranjang: %w", err)
 	}
@@ -75,13 +75,13 @@ func (c *cartUsecase) GetCart(ctx context.Context, userID uint) (*entity.Cart, e
 	}
 	defer tx.Rollback()
 
-	cart, err := c.cartRepo.GetCartByUserId(ctx, tx, userID)
+	cart, err := c.cartRepo.ReadCartByUserId(ctx, tx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ambil items
-	items, err := c.cartRepo.GetCartItems(ctx, tx, cart.Id)
+	items, err := c.cartRepo.ReadCartItemsById(ctx, tx, cart.Id)
 	if err != nil {
 		return nil, err
 	}

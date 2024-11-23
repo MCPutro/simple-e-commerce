@@ -39,14 +39,14 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 	}()
 
 	// Get cart with FOR UPDATE lock
-	cart, err := o.cartRepo.GetCartByUserId(ctx, tx, userID)
+	cart, err := o.cartRepo.ReadCartByUserId(ctx, tx, userID)
 	if err != nil {
 		return nil, err
 	}
 	logger.ContextLogger(ctx).Infof("%+v", cart)
 
 	// Get cart items with FOR UPDATE lock
-	cartItems, err := o.cartRepo.GetCartItems(ctx, tx, cart.Id)
+	cartItems, err := o.cartRepo.ReadCartItemsById(ctx, tx, cart.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 	orderItems := make([]entity.OrderItem, 0)
 	for _, item := range cartItems {
 		// Get product with FOR UPDATE lock
-		product, err := o.productRepo.GetProductByID(ctx, tx, item.ProductID)
+		product, err := o.productRepo.ReadByID(ctx, tx, item.ProductID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get product %d: %w", item.ProductID, err)
 		}
@@ -98,13 +98,13 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 		Status:     "PENDING",
 	}
 
-	err = o.orderRepo.CreateOrder(ctx, tx, order)
+	err = o.orderRepo.Write(ctx, tx, order)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
 
 	// Clear cart
-	err = o.cartRepo.ClearCart(ctx, tx, cart.Id)
+	err = o.cartRepo.RemoveCart(ctx, tx, cart.Id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to clear cart: %w", err)
 	}
@@ -125,7 +125,7 @@ func (o *orderUsecase) GetOrder(ctx context.Context, orderID string) (*entity.Or
 	}
 	defer tx.Rollback()
 
-	order, err := o.orderRepo.GetOrderByID(ctx, tx, orderID)
+	order, err := o.orderRepo.ReadByID(ctx, tx, orderID)
 	if err != nil {
 		return nil, err
 	}

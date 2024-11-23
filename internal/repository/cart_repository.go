@@ -13,11 +13,11 @@ import (
 )
 
 type CartRepository interface {
-	AddToCart(ctx context.Context, tx *sql.Tx, userID uint, item *entity.CartItem) error
-	GetCartByUserId(ctx context.Context, tx *sql.Tx, userID uint) (*entity.Cart, error)
-	GetCartItems(ctx context.Context, tx *sql.Tx, cartID uint) ([]entity.CartItem, error)
-	ClearCart(ctx context.Context, tx *sql.Tx, cartID uint) error
-	GetAllCartId(ctx context.Context, tx *sql.Tx) ([]uint, error)
+	WriteCart(ctx context.Context, tx *sql.Tx, userID uint, item *entity.CartItem) error
+	ReadCartByUserId(ctx context.Context, tx *sql.Tx, userID uint) (*entity.Cart, error)
+	ReadCartItemsById(ctx context.Context, tx *sql.Tx, cartID uint) ([]entity.CartItem, error)
+	RemoveCart(ctx context.Context, tx *sql.Tx, cartID uint) error
+	ReadAllCartId(ctx context.Context, tx *sql.Tx) ([]uint, error)
 	UpdateCartItemQuantity(ctx context.Context, tx *sql.Tx, cartID uint, productID uint, quantity int) error
 	RemoveCartItem(ctx context.Context, tx *sql.Tx, cartID uint, productID uint) error
 	ValidateCartItems(ctx context.Context, tx *sql.Tx, cartID uint) error
@@ -25,9 +25,9 @@ type CartRepository interface {
 
 type cartRepository struct{}
 
-func (c *cartRepository) AddToCart(ctx context.Context, tx *sql.Tx, userID uint, item *entity.CartItem) error {
+func (c *cartRepository) WriteCart(ctx context.Context, tx *sql.Tx, userID uint, item *entity.CartItem) error {
 
-	existingCart, err := c.GetCartByUserId(ctx, tx, userID)
+	existingCart, err := c.ReadCartByUserId(ctx, tx, userID)
 	if err != nil && !errors.Is(err, newError.ErrCartNotFound) {
 		return err
 	}
@@ -75,7 +75,7 @@ func (c *cartRepository) AddToCart(ctx context.Context, tx *sql.Tx, userID uint,
 	return err
 }
 
-func (c *cartRepository) GetCartByUserId(ctx context.Context, tx *sql.Tx, userID uint) (*entity.Cart, error) {
+func (c *cartRepository) ReadCartByUserId(ctx context.Context, tx *sql.Tx, userID uint) (*entity.Cart, error) {
 
 	query := "SELECT id, user_id, creation_time, update_time, delete_time FROM e_commerce.carts WHERE user_id = ? AND delete_time IS NULL FOR UPDATE;"
 
@@ -107,7 +107,7 @@ func (c *cartRepository) GetCartByUserId(ctx context.Context, tx *sql.Tx, userID
 	return nil, newError.ErrCartNotFound
 }
 
-func (c *cartRepository) GetCartItems(ctx context.Context, tx *sql.Tx, cartID uint) ([]entity.CartItem, error) {
+func (c *cartRepository) ReadCartItemsById(ctx context.Context, tx *sql.Tx, cartID uint) ([]entity.CartItem, error) {
 	if cartID == 0 {
 		return nil, errors.New("invalid cart ID")
 	}
@@ -140,7 +140,7 @@ func (c *cartRepository) GetCartItems(ctx context.Context, tx *sql.Tx, cartID ui
 	return cartItems, nil
 }
 
-func (c *cartRepository) ClearCart(ctx context.Context, tx *sql.Tx, cartID uint) error {
+func (c *cartRepository) RemoveCart(ctx context.Context, tx *sql.Tx, cartID uint) error {
 	now := time.Now().Format(constant.TimeFormat)
 	queryRemoveCard := "UPDATE e_commerce.carts SET delete_time = ? WHERE id = ?"
 	result, err := tx.ExecContext(ctx, queryRemoveCard, now, cartID)
@@ -160,7 +160,7 @@ func (c *cartRepository) ClearCart(ctx context.Context, tx *sql.Tx, cartID uint)
 	}
 }
 
-func (c *cartRepository) GetAllCartId(ctx context.Context, tx *sql.Tx) ([]uint, error) {
+func (c *cartRepository) ReadAllCartId(ctx context.Context, tx *sql.Tx) ([]uint, error) {
 	query := "SELECT id FROM e_commerce.carts where delete_time is null FOR UPDATE;"
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {

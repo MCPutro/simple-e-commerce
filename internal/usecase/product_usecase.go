@@ -13,7 +13,8 @@ import (
 
 type ProductUseCase interface {
 	UpdateProduct(ctx context.Context, product *entity.Product) error
-	GetProduct(ctx context.Context, productID uint) (*entity.Product, error)
+	GetProductByID(ctx context.Context, productID uint) (*entity.Product, error)
+	GetProducts(ctx context.Context) ([]*entity.Product, error)
 	CreateProduct(ctx context.Context, product *entity.Product) error
 }
 
@@ -38,7 +39,7 @@ func (p *productUsecase) UpdateProduct(ctx context.Context, product *entity.Prod
 	}()
 
 	// Cek apakah produk ada
-	existingProduct, err := p.productRepo.GetProductByID(ctx, tx, product.Id)
+	existingProduct, err := p.productRepo.ReadByID(ctx, tx, product.Id)
 	if err != nil {
 		return fmt.Errorf("produk tidak ditemukan: %w", err)
 	}
@@ -59,19 +60,35 @@ func (p *productUsecase) UpdateProduct(ctx context.Context, product *entity.Prod
 	return tx.Commit()
 }
 
-func (p *productUsecase) GetProduct(ctx context.Context, productID uint) (*entity.Product, error) {
+func (p *productUsecase) GetProductByID(ctx context.Context, productID uint) (*entity.Product, error) {
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, newError.ErrOpenTransactionWithDetails(err.Error())
 	}
 	defer tx.Rollback()
 
-	product, err := p.productRepo.GetProductByID(ctx, tx, productID)
+	product, err := p.productRepo.ReadByID(ctx, tx, productID)
 	if err != nil {
 		return nil, err
 	}
 
 	return product, tx.Commit()
+}
+
+func (p *productUsecase) GetProducts(ctx context.Context) ([]*entity.Product, error) {
+	tx, err := p.db.Begin()
+	if err != nil {
+		return nil, newError.ErrOpenTransactionWithDetails(err.Error())
+	}
+	defer tx.Rollback()
+
+	products, err := p.productRepo.ReadAll(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Commit()
+	return products, nil
 }
 
 func (p *productUsecase) CreateProduct(ctx context.Context, product *entity.Product) error {
@@ -86,7 +103,7 @@ func (p *productUsecase) CreateProduct(ctx context.Context, product *entity.Prod
 		}
 	}()
 
-	err = p.productRepo.CreateProduct(ctx, tx, product)
+	err = p.productRepo.Write(ctx, tx, product)
 	if err != nil {
 		return fmt.Errorf("gagal membuat produk: %w", err)
 	}
