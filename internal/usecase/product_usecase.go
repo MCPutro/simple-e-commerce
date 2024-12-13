@@ -6,24 +6,24 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MCPutro/E-commerce/internal/entity"
-	"github.com/MCPutro/E-commerce/internal/repository"
+	"github.com/MCPutro/E-commerce/internal/domain"
+	"github.com/MCPutro/E-commerce/internal/repository/product"
 	newError "github.com/MCPutro/E-commerce/pkg/error"
 )
 
 type ProductUseCase interface {
-	UpdateProduct(ctx context.Context, product *entity.Product) error
-	GetProductByID(ctx context.Context, productID uint) (*entity.Product, error)
-	GetProducts(ctx context.Context) ([]*entity.Product, error)
-	CreateProduct(ctx context.Context, product *entity.Product) error
+	UpdateProduct(ctx context.Context, product *domain.Product) error
+	GetProductByID(ctx context.Context, productID uint) (*domain.Product, error)
+	GetProducts(ctx context.Context) ([]*domain.Product, error)
+	CreateProduct(ctx context.Context, product *domain.Product) error
 }
 
 type productUsecase struct {
-	productRepo repository.ProductRepository
+	productRepo product.Repository
 	db          *sql.DB
 }
 
-func (p *productUsecase) UpdateProduct(ctx context.Context, product *entity.Product) error {
+func (p *productUsecase) UpdateProduct(ctx context.Context, product *domain.Product) error {
 	if product.Stock < 0 {
 		return errors.New("stock quantity cannot be negative")
 	}
@@ -60,7 +60,7 @@ func (p *productUsecase) UpdateProduct(ctx context.Context, product *entity.Prod
 	return tx.Commit()
 }
 
-func (p *productUsecase) GetProductByID(ctx context.Context, productID uint) (*entity.Product, error) {
+func (p *productUsecase) GetProductByID(ctx context.Context, productID uint) (*domain.Product, error) {
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, newError.ErrOpenTransactionWithDetails(err.Error())
@@ -75,7 +75,7 @@ func (p *productUsecase) GetProductByID(ctx context.Context, productID uint) (*e
 	return product, tx.Commit()
 }
 
-func (p *productUsecase) GetProducts(ctx context.Context) ([]*entity.Product, error) {
+func (p *productUsecase) GetProducts(ctx context.Context) ([]*domain.Product, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, newError.ErrOpenTransactionWithDetails(err.Error())
@@ -91,7 +91,7 @@ func (p *productUsecase) GetProducts(ctx context.Context) ([]*entity.Product, er
 	return products, nil
 }
 
-func (p *productUsecase) CreateProduct(ctx context.Context, product *entity.Product) error {
+func (p *productUsecase) CreateProduct(ctx context.Context, product *domain.Product) error {
 
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -115,7 +115,7 @@ func (p *productUsecase) CreateProduct(ctx context.Context, product *entity.Prod
 	return nil
 }
 
-func NewProductUseCase(productRepo repository.ProductRepository, db *sql.DB) ProductUseCase {
+func NewProductUseCase(productRepo product.Repository, db *sql.DB) ProductUseCase {
 	return &productUsecase{
 		productRepo: productRepo,
 		db:          db,

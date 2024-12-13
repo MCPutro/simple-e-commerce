@@ -6,23 +6,25 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MCPutro/E-commerce/internal/entity"
-	"github.com/MCPutro/E-commerce/internal/repository"
+	"github.com/MCPutro/E-commerce/internal/domain"
+
+	"github.com/MCPutro/E-commerce/internal/repository/cart"
+	"github.com/MCPutro/E-commerce/internal/repository/product"
 	newError "github.com/MCPutro/E-commerce/pkg/error"
 )
 
 type CartUseCase interface {
-	AddToCart(ctx context.Context, userID uint, item *entity.CartItem) error
-	GetCart(ctx context.Context, userID uint) (*entity.Cart, error)
+	AddToCart(ctx context.Context, userID uint, item *domain.CartItem) error
+	GetCart(ctx context.Context, userID uint) (*domain.Cart, error)
 }
 
 type cartUsecase struct {
-	cartRepo    repository.CartRepository
-	productRepo repository.ProductRepository
+	cartRepo    cart.Repository
+	productRepo product.Repository
 	db          *sql.DB
 }
 
-func (c *cartUsecase) AddToCart(ctx context.Context, userID uint, item *entity.CartItem) error {
+func (c *cartUsecase) AddToCart(ctx context.Context, userID uint, item *domain.CartItem) error {
 	if item == nil {
 		return errors.New("cart item cannot be nil")
 	}
@@ -60,7 +62,7 @@ func (c *cartUsecase) AddToCart(ctx context.Context, userID uint, item *entity.C
 	// }
 
 	// Tambahkan ke keranjang
-	err = c.cartRepo.WriteCart(ctx, tx, userID, item)
+	err = c.cartRepo.Write(ctx, tx, userID, item)
 	if err != nil {
 		return fmt.Errorf("gagal menambahkan ke keranjang: %w", err)
 	}
@@ -68,7 +70,7 @@ func (c *cartUsecase) AddToCart(ctx context.Context, userID uint, item *entity.C
 	return tx.Commit()
 }
 
-func (c *cartUsecase) GetCart(ctx context.Context, userID uint) (*entity.Cart, error) {
+func (c *cartUsecase) GetCart(ctx context.Context, userID uint) (*domain.Cart, error) {
 	tx, err := c.db.Begin()
 	if err != nil {
 		return nil, newError.ErrOpenTransactionWithDetails(err.Error())
@@ -90,7 +92,7 @@ func (c *cartUsecase) GetCart(ctx context.Context, userID uint) (*entity.Cart, e
 	return cart, tx.Commit()
 }
 
-func NewCartUseCase(cartRepo repository.CartRepository, productRepo repository.ProductRepository, db *sql.DB) CartUseCase {
+func NewCartUseCase(cartRepo cart.Repository, productRepo product.Repository, db *sql.DB) CartUseCase {
 	return &cartUsecase{
 		cartRepo:    cartRepo,
 		productRepo: productRepo,

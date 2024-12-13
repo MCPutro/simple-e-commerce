@@ -6,25 +6,29 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MCPutro/E-commerce/internal/entity"
-	"github.com/MCPutro/E-commerce/internal/repository"
+	"github.com/MCPutro/E-commerce/internal/domain"
+	"github.com/MCPutro/E-commerce/internal/repository/cart"
+	"github.com/MCPutro/E-commerce/internal/repository/order"
+	"github.com/MCPutro/E-commerce/internal/repository/product"
+
+	"github.com/MCPutro/E-commerce/pkg/constant"
 	newError "github.com/MCPutro/E-commerce/pkg/error"
 	"github.com/MCPutro/E-commerce/pkg/logger"
 )
 
 type OrderUseCase interface {
-	Checkout(ctx context.Context, userID uint) (*entity.Order, error)
-	GetOrder(ctx context.Context, orderID string) (*entity.Order, error)
+	Checkout(ctx context.Context, userID uint) (*domain.Order, error)
+	GetOrder(ctx context.Context, orderID string) (*domain.Order, error)
 }
 
 type orderUsecase struct {
-	productRepo repository.ProductRepository
-	cartRepo    repository.CartRepository
-	orderRepo   repository.OrderRepository
+	productRepo product.Repository
+	cartRepo    cart.Repository
+	orderRepo   order.Repository
 	db          *sql.DB
 }
 
-func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order, error) {
+func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*domain.Order, error) {
 	logger.ContextLogger(ctx).Infof("Checkout userId: %d", userID)
 
 	// Start transaction
@@ -63,7 +67,7 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 
 	// Calculate total price and prepare order items
 	var totalPrice float64
-	orderItems := make([]entity.OrderItem, 0)
+	orderItems := make([]domain.OrderItem, 0)
 	for _, item := range cartItems {
 		// Get product with FOR UPDATE lock
 		product, err := o.productRepo.ReadByID(ctx, tx, item.ProductID)
@@ -83,7 +87,7 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 		totalPrice += itemTotal
 
 		// Create order item
-		orderItems = append(orderItems, entity.OrderItem{
+		orderItems = append(orderItems, domain.OrderItem{
 			ProductId:  product.Id,
 			Quantity:   item.Quantity,
 			TotalPrice: itemTotal,
@@ -91,11 +95,11 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 	}
 
 	// Create order
-	order := &entity.Order{
-		UserId:     userID,
-		TotalPrice: totalPrice,
-		Items:      orderItems,
-		Status:     "PENDING",
+	order := &domain.Order{
+		UserId:      userID,
+		TotalAmount: totalPrice,
+		Items:       orderItems,
+		Status:      constant.Pending,
 	}
 
 	err = o.orderRepo.Write(ctx, tx, order)
@@ -118,7 +122,7 @@ func (o *orderUsecase) Checkout(ctx context.Context, userID uint) (*entity.Order
 	return order, nil
 }
 
-func (o *orderUsecase) GetOrder(ctx context.Context, orderID string) (*entity.Order, error) {
+func (o *orderUsecase) GetOrder(ctx context.Context, orderID string) (*domain.Order, error) {
 	tx, err := o.db.Begin()
 	if err != nil {
 		return nil, newError.ErrOpenTransactionWithDetails(err.Error())
@@ -133,7 +137,7 @@ func (o *orderUsecase) GetOrder(ctx context.Context, orderID string) (*entity.Or
 	return order, tx.Commit()
 }
 
-func NewOrderUseCase(productRepo repository.ProductRepository, cartRepo repository.CartRepository, orderRepo repository.OrderRepository, db *sql.DB) OrderUseCase {
+func NewOrderUseCase(productRepo product.Repository, cartRepo cart.Repository, orderRepo order.Repository, db *sql.DB) OrderUseCase {
 	return &orderUsecase{
 		productRepo: productRepo,
 		cartRepo:    cartRepo,

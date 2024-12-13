@@ -1,20 +1,26 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/MCPutro/E-commerce/internal/delivery"
-	"github.com/MCPutro/E-commerce/internal/middleware"
 	"log"
 	"net/http"
+
+	"github.com/MCPutro/E-commerce/internal/delivery"
+	"github.com/MCPutro/E-commerce/internal/domain"
+	"github.com/MCPutro/E-commerce/internal/middleware"
+	"github.com/MCPutro/E-commerce/internal/repository/user"
+	"github.com/google/uuid"
 
 	"github.com/MCPutro/E-commerce/internal/db"
 	"github.com/MCPutro/E-commerce/internal/repository"
 	"github.com/MCPutro/E-commerce/internal/usecase"
+	"github.com/MCPutro/E-commerce/pkg/constant"
 	"github.com/MCPutro/E-commerce/pkg/logger"
 	"github.com/sirupsen/logrus"
 )
 
-func main() {
+func main2() {
 
 	logger.NewLogger(logrus.DebugLevel)
 
@@ -99,4 +105,48 @@ func main() {
 	//fmt.Println("running in port 3000")
 	//
 	//app.Listen(":3000")
+}
+
+func main() {
+	newBb, _ := db.GetMysqlConnection()
+	defer newBb.Close()
+
+	tx, err := newBb.Begin()
+	if err != nil {
+		logrus.Infoln("error :", err)
+		return
+	}
+	defer tx.Rollback()
+
+	userRepo := user.NewUserRepository()
+
+	newUser := domain.User{
+		Id:       uuid.NewString(),
+		Name:     "name",
+		Email:    "email111@gmail.com",
+		Password: "password",
+		Role:     constant.Staff,
+	}
+
+	userRepo.Create(context.Background(), tx, &newUser)
+
+	newUser2 := domain.User{
+		Id:       uuid.NewString(),
+		Name:     "name",
+		Email:    "email222@gmail.com",
+		Password: "password",
+		Role:     constant.Staff,
+		Address: []domain.UserAddress{
+			{Address: "Jakarta", City: "jkt", PostalCode: "123"},
+			{Address: "Bandung", City: "bdg", PostalCode: "456"},
+		},
+	}
+	userRepo.Create(context.Background(), tx, &newUser2)
+
+	all, err := userRepo.FindAll(context.Background(), tx)
+	fmt.Println(err)
+	fmt.Println(all)
+
+	tx.Commit()
+
 }

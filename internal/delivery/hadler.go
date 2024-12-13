@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/MCPutro/E-commerce/internal/entity"
+	"github.com/MCPutro/E-commerce/internal/domain"
 	"github.com/MCPutro/E-commerce/internal/usecase"
 	"github.com/MCPutro/E-commerce/pkg/logger"
 )
@@ -70,7 +70,7 @@ func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.ContextLogger(ctx)
 
-	var cartItem entity.CartItem
+	var cartItem domain.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&cartItem); err != nil {
 		log.WithError(err).Error("invalid request body")
 		http.Error(w, "invalid request body", http.StatusBadRequest)

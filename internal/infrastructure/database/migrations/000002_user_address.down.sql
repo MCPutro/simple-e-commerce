@@ -1,0 +1,1 @@
+DROP TABLE go_coffe_shop.users CASCADE;

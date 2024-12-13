@@ -1,9 +1,9 @@
-package entity
+package domain
 
 import "time"
 
 type OrderItem struct {
-	TrxId        int
+	OrderId      string
 	Seq          uint
 	ProductId    uint
 	Quantity     uint
@@ -11,4 +11,8 @@ type OrderItem struct {
 	CreationTime time.Time
 	UpdateTIme   time.Time
 	DeleteTime   time.Time
+}
+
+func (u *OrderItem) TableName() string {
+	return "order_items"
 }
