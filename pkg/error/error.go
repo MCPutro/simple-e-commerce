@@ -34,7 +34,8 @@ var (
 	ErrDatabaseConnection = newError(errCodeDatabaseOperation, "database connection error")
 	ErrTimeout            = newError(errCodeInternalServer, "request timeout")
 
-	ErrOpenTransaction = newError(errCodeInternalServer, "failed to open transaction")
+	ErrOpenTransaction   = newError(errCodeInternalServer, "failed to open transaction")
+	ErrCommitTransaction = newError(errCodeInternalServer, "failed to commit transaction")
 )
 
 type CustomError struct {
@@ -55,6 +56,10 @@ func NewErrorWithDetails(code int, message string, details interface{}) *CustomE
 
 func ErrOpenTransactionWithDetails(details interface{}) *CustomError {
 	return NewErrorWithDetails(ErrOpenTransaction.Code, ErrOpenTransaction.Message, details)
+}
+
+func ErrCommitTransactionWithDetails(details interface{}) *CustomError {
+	return NewErrorWithDetails(ErrCommitTransaction.Code, ErrCommitTransaction.Message, details)
 }
 
 func (e *CustomError) Error() string {
