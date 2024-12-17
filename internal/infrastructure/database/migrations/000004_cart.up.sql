@@ -1,6 +1,6 @@
 CREATE TABLE `carts`
 (
-    `id`            bigint NOT NULL AUTO_INCREMENT,
+    `id`            bigint unsigned NOT NULL AUTO_INCREMENT,
     `user_id`       varchar(50) NOT NULL,
     `created_at`    timestamp NULL DEFAULT NOW(),
     `updated_at`    timestamp NULL DEFAULT NOW(),

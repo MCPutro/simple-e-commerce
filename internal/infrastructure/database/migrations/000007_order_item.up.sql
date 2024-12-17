@@ -4,6 +4,7 @@ CREATE TABLE `order_items`
     `seq`           bigint unsigned NOT NULL,
     `product_id`    bigint unsigned DEFAULT NULL,
     `quantity`      bigint unsigned DEFAULT NULL,
+    `unit_price`    double DEFAULT NULL,
     `total_price`   double DEFAULT NULL,
     `created_at`    timestamp NULL DEFAULT NOW(),
     `updated_at`    timestamp NULL DEFAULT NOW(),

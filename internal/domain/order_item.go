@@ -7,6 +7,7 @@ type OrderItem struct {
 	Seq          uint
 	ProductId    uint
 	Quantity     uint
+	UnitPrice    float64
 	TotalPrice   float64
 	CreationTime time.Time
 	UpdateTIme   time.Time
