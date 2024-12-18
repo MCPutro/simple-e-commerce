@@ -49,7 +49,7 @@ func (r *userRepository) ReadById(cxt context.Context, tx *sql.Tx, id string) (*
 		       ua.address, ua.city, ua.postal_code 
 		FROM e_commerce.users u 
 		LEFT JOIN e_commerce.user_addresses ua ON u.id = ua.user_id 
-		WHERE u.id = ?`
+		WHERE u.deleted_at IS NULL AND ua.deleted_at IS NULL AND u.id = ? ;`
 
 	rows, err := tx.QueryContext(cxt, query, id)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *userRepository) ReadByEmail(cxt context.Context, tx *sql.Tx, email stri
 		       ua.address, ua.city, ua.postal_code 
 		FROM e_commerce.users u 
 		LEFT JOIN e_commerce.user_addresses ua ON u.id = ua.user_id 
-		WHERE u.email = ?`
+		WHERE u.deleted_at IS NULL AND ua.deleted_at IS NULL AND u.email = ?; `
 
 	rows, err := tx.QueryContext(cxt, query, email)
 	if err != nil {
@@ -99,7 +99,12 @@ func (r *userRepository) ReadByEmail(cxt context.Context, tx *sql.Tx, email stri
 }
 
 func (r *userRepository) ReadAll(cxt context.Context, tx *sql.Tx) ([]domain.User, error) {
-	query := "SELECT id, name, email, password, role FROM e_commerce.users"
+	query := `
+		SELECT u.id, u.name, u.email, u.password, u.role, 
+		       ua.address, ua.city, ua.postal_code 
+		FROM e_commerce.users u 
+		LEFT JOIN e_commerce.user_addresses ua ON u.id = ua.user_id 
+		WHERE u.deleted_at IS NULL AND ua.deleted_at IS NULL ;`
 	rows, err := tx.QueryContext(cxt, query)
 	if err != nil {
 		return nil, err
@@ -118,13 +123,13 @@ func (r *userRepository) ReadAll(cxt context.Context, tx *sql.Tx) ([]domain.User
 }
 
 func (r *userRepository) Update(cxt context.Context, tx *sql.Tx, user *domain.User) error {
-	query := "UPDATE e_commerce.users SET name = ?, email = ?, password = ?, role = ? WHERE id = ?"
+	query := "UPDATE e_commerce.users SET name = ?, email = ?, password = ?, role = ? WHERE deleted_at IS NULL AND id = ? ;"
 	_, err := tx.ExecContext(cxt, query, user.Name, user.Email, user.Password, user.Role, user.Id)
 	return err
 }
 
 func (r *userRepository) Delete(cxt context.Context, tx *sql.Tx, id string) error {
-	query := "DELETE FROM e_commerce.users WHERE id = ?"
+	query := "UPDATE e_commerce.users SET deleted_at = NOW() WHERE id = ?;"
 	_, err := tx.ExecContext(cxt, query, id)
 	return err
 }
