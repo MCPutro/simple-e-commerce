@@ -1,1 +1,1 @@
-DROP TABLE go_coffe_shop.users CASCADE;
+DROP TABLE user_addresses CASCADE;
